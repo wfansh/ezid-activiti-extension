@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<project name="ezid-cert-activiti-extension" default="integration-build">
+	
+	<property name="war.dir" value="${basedir}"/>
+	<property name="resources.dir" value="${basedir}/src/main/resources"/>
+	<property name="target.dir" value="${basedir}/target"/>
+	<property name="temp.dir" value="${target.dir}/temp"/>
+	
+	<target name="integration-build">		
+		<echo message="Making dir ${temp.dir}..."/>
+		<mkdir dir="${temp.dir}"/>
+		
+		<available file="${war.dir}/activiti-explorer.war" property="explorer.exist" /> 
+		<antcall target="assemble-explorer"/>
+		
+		<available file="${war.dir}/activiti-rest.war" property="rest.exist" />
+		<antcall target="assemble-rest"/>
+		
+		<echo message="Deleting dir ${temp.dir}..."/>
+		<delete dir="${temp.dir}"/>
+	</target>
+			
+	<target name="assemble-explorer" if="explorer.exist">
+		<echo message="Assembling activiti-explorer.war"/>
+		<property name="unwar.dir" location="${temp.dir}/activiti-explorer"/>
+		<unwar dest="${unwar.dir}" src="${war.dir}/activiti-explorer.war"/>
+		
+		<!--Copy activiti-standalone-context.xml-->
+		<copy todir="${unwar.dir}/WEB-INF" file="${resources.dir}/activiti-standalone-context.xml" overwrite="true"/>
+		
+		<!--Copy db.properties-->
+		<copy todir="${unwar.dir}/WEB-INF/classes" file="${resources.dir}/db.properties" overwrite="true"/>
+
+		<!--Copy ezid-cert-activiti-extension.jar-->
+		<copy todir="${unwar.dir}/WEB-INF/lib" overwrite="true">
+			<fileset dir="${target.dir}" includes="ezid-cert-activiti-extension*.jar"/>
+		</copy>
+		
+		<!--Rename ezid-cert-activiti-extension.jar to activiti-ezid-cert-activiti-extension.jar-->
+		<!--A tricky approach here, to enable the extension classes loaded with higher priority-->
+		<move todir="${unwar.dir}/WEB-INF/lib">
+			<fileset dir="${unwar.dir}/WEB-INF/lib"/>
+			<mapper type="regexp" from="ezid-cert-activiti-extension(.*).jar" to="activiti-ezid-cert-activiti-extension\1.jar"/>
+		</move>
+		
+		<war destfile="${target.dir}/activiti-explorer.war" basedir="${unwar.dir}"/>
+	</target>
+	
+	<target name="assemble-rest" if="rest.exist">
+		<echo message="Assembling activiti-rest.war"/>
+		<property name="unwar.dir" location="${temp.dir}/activiti-rest"/>
+		<unwar dest="${unwar.dir}" src="${war.dir}/activiti-rest.war"/>
+		
+		<!--Copy db.properties & activiti-standalone-context.xml-->
+		<copy todir="${unwar.dir}/WEB-INF/classes" file="${resources.dir}/activiti-context.xml" overwrite="true">
+			<fileset dir="${resources.dir}">
+				<include name="db.properties"/>
+				<include name="activiti-context.xml"/>
+			</fileset>
+		</copy>
+			
+		<!--Copy ezid-cert-activiti-extension.jar-->
+		<copy todir="${unwar.dir}/WEB-INF/lib" overwrite="true">
+			<fileset dir="${target.dir}" includes="ezid-cert-activiti-extension*.jar"/>
+		</copy>
+		
+		<!--Rename ezid-cert-activiti-extension.jar to activiti-ezid-cert-activiti-extension.jar-->
+		<!--A tricky approach here, to enable the extension classes loaded with higher priority-->
+		<move todir="${unwar.dir}/WEB-INF/lib">
+			<fileset dir="${unwar.dir}/WEB-INF/lib"/>
+			<mapper type="regexp" from="ezid-cert-activiti-extension(.*).jar" to="activiti-ezid-cert-activiti-extension\1.jar"/>
+		</move>
+		
+		<!--Modify the iBatis mapper .xml files and DB create .sql files in engine .jar, for performance tunning-->
+		<first id="first">
+			<fileset dir="${unwar.dir}/WEB-INF/lib" includes="activiti-engine-*.jar"/>
+		</first>
+		<property name="engine.jar" value="${toString:first}"/>
+		<property name="engine.dir" value="${unwar.dir}/engine"/>
+		<unjar dest="${engine.dir}" src="${engine.jar}"/>
+		<copy todir="${engine.dir}/org/activiti/db/mapping/entity" overwrite="true">
+			<fileset dir="${resources.dir}">
+				<include name="Task.xml"/>
+				<include name="HistoricTaskInstance.xml"/>
+			</fileset>
+		</copy>
+		<copy todir="${engine.dir}/org/activiti/db/create" overwrite="true">
+			<fileset dir="${resources.dir}">
+				<include name="activiti.mysql.create.history.sql"/>
+				<include name="activiti.mysql55.create.history.sql"/>
+			</fileset>
+		</copy>
+		<jar destfile="${engine.jar}" basedir="${engine.dir}"/>
+		<delete dir="${engine.dir}"/>
+		
+		<war destfile="${target.dir}/activiti-rest.war" basedir="${unwar.dir}"/>	
+	</target>
+</project>

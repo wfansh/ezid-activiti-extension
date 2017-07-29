@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.ezid.cn/process">
+  <process id="socialsecProcess" name="social sec process" isExecutable="true">
+    <extensionElements>
+      <activiti:executionListener event="start" class="cn.ezid.activiti.extension.listener.ProcessStartListener"></activiti:executionListener>
+      <activiti:executionListener event="end" class="cn.ezid.activiti.extension.listener.ProcessEndListener"></activiti:executionListener>
+    </extensionElements>
+    <startEvent id="startevent1" name="Start">
+      <extensionElements>
+        <activiti:formProperty id="in_machineCertificationThreshold" type="long"></activiti:formProperty>
+        <activiti:formProperty id="in_personIdcardNum" type="string"></activiti:formProperty>
+        <activiti:formProperty id="in_personName" type="string"></activiti:formProperty>
+        <activiti:formProperty id="in_personPhoto" type="string"></activiti:formProperty>
+        <activiti:formProperty id="in_personVideo" type="string"></activiti:formProperty>
+        <activiti:formProperty id="in_personIdcardPrint" type="string"></activiti:formProperty>
+        <activiti:formProperty id="in_personGender" type="string"></activiti:formProperty>
+        <activiti:formProperty id="in_personPhotoSource" type="string"></activiti:formProperty>
+        <activiti:formProperty id="in_personBirthdate" type="string"></activiti:formProperty>
+        <activiti:formProperty id="in_certCallback" type="string"></activiti:formProperty>
+      </extensionElements>
+    </startEvent>
+    <userTask id="get_idcard_photo" name="身份证照片模块" activiti:candidateGroups="group_photo_adapter" activiti:dueDate="PT10M">
+      <extensionElements>
+        <activiti:formProperty id="in_personIdcardNum" type="string"></activiti:formProperty>
+        <activiti:formProperty id="in_personName" type="string"></activiti:formProperty>
+        <activiti:formProperty id="cor_personIdcardPhoto" type="string"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResult" type="boolean"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResultDesc" type="string"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResultCertainty" type="long"></activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow2" sourceRef="get_idcard_photo" targetRef="exclusivegateway1"></sequenceFlow>
+    <userTask id="machine_certification" name="照片机器对比" activiti:candidateGroups="group_machine_certification" activiti:dueDate="PT10M">
+      <extensionElements>
+        <activiti:formProperty id="cor_personIdcardPhoto" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="in_personPhoto" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="out_machineCertificationResult" type="long"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResult" type="boolean"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResultDesc" type="string"></activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow5" name="成功" sourceRef="exclusivegateway1" targetRef="machine_certification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${out_taskResult}]]></conditionExpression>
+    </sequenceFlow>
+    <exclusiveGateway id="exclusivegateway2" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow6" sourceRef="machine_certification" targetRef="exclusivegateway2"></sequenceFlow>
+    <userTask id="manual_review" name="照片人工复核" activiti:candidateGroups="group_manual_review" activiti:dueDate="P10D">
+      <extensionElements>
+        <activiti:formProperty id="cor_personIdcardPhoto" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="in_personPhoto" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="in_personIdcardPrint" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResult" type="boolean"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResultDesc" type="string"></activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow7" name="通过" sourceRef="exclusivegateway2" targetRef="manual_review">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${out_machineCertificationResult>=in_machineCertificationThreshold}]]></conditionExpression>
+    </sequenceFlow>
+    <userTask id="manual_certification" name="照片人工审核" activiti:candidateGroups="group_manual_certification" activiti:dueDate="P10D">
+      <extensionElements>
+        <activiti:formProperty id="cor_personIdcardPhoto" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="in_personPhoto" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="in_personIdcardPrint" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResult" type="boolean"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResultDesc" type="string"></activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow8" name="不通过" sourceRef="exclusivegateway2" targetRef="manual_certification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${out_machineCertificationResult<in_machineCertificationThreshold}]]></conditionExpression>
+    </sequenceFlow>
+    <endEvent id="endevent4" name="End"></endEvent>
+    <sequenceFlow id="flow13" name="失败" sourceRef="exclusivegateway1" targetRef="exclusivegateway11">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${!out_taskResult}]]></conditionExpression>
+    </sequenceFlow>
+    <endEvent id="endevent5" name="End"></endEvent>
+    <sequenceFlow id="flow14" sourceRef="manual_review" targetRef="endevent5"></sequenceFlow>
+    <endEvent id="endevent6" name="End"></endEvent>
+    <sequenceFlow id="flow15" sourceRef="manual_certification" targetRef="endevent6"></sequenceFlow>
+    <userTask id="photo_preprocess" name="照片预处理" activiti:candidateGroups="group_photo_preprocess" activiti:dueDate="PT10M">
+      <extensionElements>
+        <activiti:formProperty id="in_personPhoto" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="in_personVideo" type="string" writable="false"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResult" type="boolean"></activiti:formProperty>
+        <activiti:formProperty id="out_taskResultDesc" type="string"></activiti:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow16" sourceRef="startevent1" targetRef="photo_preprocess"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway3" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow17" sourceRef="photo_preprocess" targetRef="exclusivegateway3"></sequenceFlow>
+    <sequenceFlow id="flow19" name="失败" sourceRef="exclusivegateway3" targetRef="endevent4">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${!out_taskResult}]]></conditionExpression>
+    </sequenceFlow>
+    <exclusiveGateway id="exclusivegateway9" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow26" name="未上传身份证照片" sourceRef="exclusivegateway9" targetRef="get_idcard_photo">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${in_personIdcardPrint==''}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow28" name="成功" sourceRef="exclusivegateway3" targetRef="exclusivegateway9">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${out_taskResult}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow29" name="已上传身份证照片" sourceRef="exclusivegateway9" targetRef="manual_certification">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${in_personIdcardPrint!=''}]]></conditionExpression>
+    </sequenceFlow>
+    <exclusiveGateway id="exclusivegateway11" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow30" name="确信" sourceRef="exclusivegateway11" targetRef="endevent4">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${out_taskResultCertainty>50}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow31" name="不确信" sourceRef="exclusivegateway11" targetRef="manual_review">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${out_taskResultCertainty<=50}]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_socialsecProcess">
+    <bpmndi:BPMNPlane bpmnElement="socialsecProcess" id="BPMNPlane_socialsecProcess">
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="90.0" y="20.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="get_idcard_photo" id="BPMNShape_get_idcard_photo">
+        <omgdc:Bounds height="55.0" width="105.0" x="370.0" y="99.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="402.0" y="180.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="machine_certification" id="BPMNShape_machine_certification">
+        <omgdc:Bounds height="55.0" width="105.0" x="370.0" y="238.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
+        <omgdc:Bounds height="40.0" width="40.0" x="402.0" y="319.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="manual_review" id="BPMNShape_manual_review">
+        <omgdc:Bounds height="55.0" width="105.0" x="177.0" y="400.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="manual_certification" id="BPMNShape_manual_certification">
+        <omgdc:Bounds height="55.0" width="105.0" x="550.0" y="400.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent4" id="BPMNShape_endevent4">
+        <omgdc:Bounds height="35.0" width="35.0" x="212.0" y="99.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent5" id="BPMNShape_endevent5">
+        <omgdc:Bounds height="35.0" width="35.0" x="212.0" y="520.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent6" id="BPMNShape_endevent6">
+        <omgdc:Bounds height="35.0" width="35.0" x="585.0" y="520.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="photo_preprocess" id="BPMNShape_photo_preprocess">
+        <omgdc:Bounds height="55.0" width="105.0" x="177.0" y="10.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
+        <omgdc:Bounds height="40.0" width="40.0" x="402.0" y="17.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway9" id="BPMNShape_exclusivegateway9">
+        <omgdc:Bounds height="40.0" width="40.0" x="582.0" y="106.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway11" id="BPMNShape_exclusivegateway11">
+        <omgdc:Bounds height="40.0" width="40.0" x="209.0" y="180.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="422.0" y="154.0"></omgdi:waypoint>
+        <omgdi:waypoint x="422.0" y="180.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="422.0" y="220.0"></omgdi:waypoint>
+        <omgdi:waypoint x="422.0" y="238.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="432.0" y="220.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="422.0" y="293.0"></omgdi:waypoint>
+        <omgdi:waypoint x="422.0" y="319.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="422.0" y="359.0"></omgdi:waypoint>
+        <omgdi:waypoint x="229.0" y="400.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="432.0" y="359.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="422.0" y="359.0"></omgdi:waypoint>
+        <omgdi:waypoint x="602.0" y="400.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="36.0" x="432.0" y="359.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13">
+        <omgdi:waypoint x="402.0" y="200.0"></omgdi:waypoint>
+        <omgdi:waypoint x="249.0" y="200.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="315.0" y="207.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow14" id="BPMNEdge_flow14">
+        <omgdi:waypoint x="229.0" y="455.0"></omgdi:waypoint>
+        <omgdi:waypoint x="229.0" y="520.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow15" id="BPMNEdge_flow15">
+        <omgdi:waypoint x="602.0" y="455.0"></omgdi:waypoint>
+        <omgdi:waypoint x="602.0" y="520.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow16" id="BPMNEdge_flow16">
+        <omgdi:waypoint x="125.0" y="37.0"></omgdi:waypoint>
+        <omgdi:waypoint x="177.0" y="37.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow17" id="BPMNEdge_flow17">
+        <omgdi:waypoint x="282.0" y="37.0"></omgdi:waypoint>
+        <omgdi:waypoint x="402.0" y="37.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow19" id="BPMNEdge_flow19">
+        <omgdi:waypoint x="422.0" y="57.0"></omgdi:waypoint>
+        <omgdi:waypoint x="229.0" y="99.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="368.0" y="64.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow26" id="BPMNEdge_flow26">
+        <omgdi:waypoint x="582.0" y="126.0"></omgdi:waypoint>
+        <omgdi:waypoint x="475.0" y="126.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="96.0" x="488.0" y="114.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow28" id="BPMNEdge_flow28">
+        <omgdi:waypoint x="422.0" y="57.0"></omgdi:waypoint>
+        <omgdi:waypoint x="602.0" y="106.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="414.0" y="64.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow29" id="BPMNEdge_flow29">
+        <omgdi:waypoint x="602.0" y="146.0"></omgdi:waypoint>
+        <omgdi:waypoint x="602.0" y="400.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="96.0" x="612.0" y="146.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow30" id="BPMNEdge_flow30">
+        <omgdi:waypoint x="229.0" y="180.0"></omgdi:waypoint>
+        <omgdi:waypoint x="229.0" y="134.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="238.0" y="161.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow31" id="BPMNEdge_flow31">
+        <omgdi:waypoint x="229.0" y="220.0"></omgdi:waypoint>
+        <omgdi:waypoint x="229.0" y="400.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="36.0" x="239.0" y="220.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
