@@ -17,3 +17,5 @@ A hack into Activiti 5.22 using Maven assembly plugin, to support:
 
 
 ## How It Works
+
+Use maven-assembly-plugin to uncompress activiti-explorer.war and activiti-rest.war, build ezid source code into .jar and copy into /WEB-INF/lib. The compress to build the customized package. 
